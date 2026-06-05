@@ -1,0 +1,305 @@
+using System;
+using System.Collections.Generic;
+
+namespace RPGGame
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.Title = "RPG Adventure";
+
+            Console.Write("Inserisci il nome del tuo eroe: ");
+            string nome = Console.ReadLine();
+
+            Giocatore giocatore = new Giocatore(nome);
+
+            bool giocoAttivo = true;
+
+            while (giocoAttivo && giocatore.Vita > 0)
+            {
+                Console.Clear();
+
+                Console.WriteLine("=== RPG ADVENTURE ===");
+                Console.WriteLine($"Nome: {giocatore.Nome}");
+                Console.WriteLine($"Livello: {giocatore.Livello}");
+                Console.WriteLine($"Vita: {giocatore.Vita}");
+                Console.WriteLine($"Attacco: {giocatore.Attacco}");
+                Console.WriteLine($"Esperienza: {giocatore.Esperienza}");
+                Console.WriteLine($"Oro: {giocatore.Oro}");
+                Console.WriteLine();
+
+                Console.WriteLine("1. Combatti");
+                Console.WriteLine("2. Inventario");
+                Console.WriteLine("3. Negozio");
+                Console.WriteLine("4. Esci");
+
+                string scelta = Console.ReadLine();
+
+                switch (scelta)
+                {
+                    case "1":
+                        Combatti(giocatore);
+                        break;
+
+                    case "2":
+                        giocatore.MostraInventario();
+                        break;
+
+                    case "3":
+                        ApriNegozio(giocatore);
+                        break;
+
+                    case "4":
+                        giocoAttivo = false;
+                        break;
+                }
+            }
+
+            Console.WriteLine("Gioco terminato.");
+            Console.ReadKey();
+        }
+
+        static void Combatti(Giocatore giocatore)
+        {
+            Random rnd = new Random();
+
+            Nemico nemico = new Nemico(
+                "Goblin",
+                rnd.Next(20, 50),
+                rnd.Next(5, 12)
+            );
+
+            Console.Clear();
+            Console.WriteLine($"Un {nemico.Nome} appare!");
+
+            while (nemico.Vita > 0 && giocatore.Vita > 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine($"Tua vita: {giocatore.Vita}");
+                Console.WriteLine($"Vita nemico: {nemico.Vita}");
+
+                Console.WriteLine("1. Attacca");
+                Console.WriteLine("2. Usa pozione");
+
+                string scelta = Console.ReadLine();
+
+                if (scelta == "1")
+                {
+                    nemico.Vita -= giocatore.Attacco;
+
+                    Console.WriteLine(
+                        $"Hai inflitto {giocatore.Attacco} danni!"
+                    );
+                }
+                else if (scelta == "2")
+                {
+                    giocatore.UsaPozione();
+                }
+
+                if (nemico.Vita > 0)
+                {
+                    giocatore.Vita -= nemico.Attacco;
+
+                    Console.WriteLine(
+                        $"Il nemico ti colpisce per {nemico.Attacco} danni!"
+                    );
+                }
+            }
+
+            if (giocatore.Vita > 0)
+            {
+                Console.WriteLine("Hai vinto!");
+
+                giocatore.Esperienza += 20;
+                giocatore.Oro += 15;
+
+                giocatore.ControllaLivello();
+            }
+            else
+            {
+                Console.WriteLine("Sei stato sconfitto!");
+            }
+
+            Console.ReadKey();
+        }
+
+        static void ApriNegozio(Giocatore giocatore)
+        {
+            Console.Clear();
+
+            Console.WriteLine("=== NEGOZIO ===");
+            Console.WriteLine("1. Compra Pozione (10 oro)");
+            Console.WriteLine("2. Esci");
+
+            string scelta = Console.ReadLine();
+
+            if (scelta == "1")
+            {
+                if (giocatore.Oro >= 10)
+                {
+                    giocatore.Oro -= 10;
+
+                    giocatore.Inventario.Add(
+                        new Pozione("Pozione", 30)
+                    );
+
+                    Console.WriteLine("Pozione acquistata!");
+                }
+                else
+                {
+                    Console.WriteLine("Oro insufficiente!");
+                }
+            }
+
+            Console.ReadKey();
+        }
+    }
+
+    class Personaggio
+    {
+        public string Nome { get; set; }
+
+        public int Vita { get; set; }
+
+        public int Attacco { get; set; }
+
+        public Personaggio(
+            string nome,
+            int vita,
+            int attacco)
+        {
+            Nome = nome;
+            Vita = vita;
+            Attacco = attacco;
+        }
+    }
+
+    class Giocatore : Personaggio
+    {
+        public int Livello { get; set; }
+
+        public int Esperienza { get; set; }
+
+        public int Oro { get; set; }
+
+        public List<Pozione> Inventario { get; set; }
+
+        public Giocatore(string nome)
+            : base(nome, 100, 15)
+        {
+            Livello = 1;
+            Esperienza = 0;
+            Oro = 20;
+
+            Inventario = new List<Pozione>();
+
+            Inventario.Add(
+                new Pozione("Pozione Base", 25)
+            );
+        }
+
+        public void MostraInventario()
+        {
+            Console.Clear();
+
+            Console.WriteLine("=== INVENTARIO ===");
+
+            if (Inventario.Count == 0)
+            {
+                Console.WriteLine("Inventario vuoto.");
+            }
+            else
+            {
+                for (int i = 0; i < Inventario.Count; i++)
+                {
+                    Console.WriteLine(
+                        $"{i + 1}. {Inventario[i].Nome}"
+                    );
+                }
+            }
+
+            Console.ReadKey();
+        }
+
+        public void UsaPozione()
+        {
+            if (Inventario.Count == 0)
+            {
+                Console.WriteLine(
+                    "Non hai pozioni!"
+                );
+                return;
+            }
+
+            Pozione p = Inventario[0];
+
+            Vita += p.Cura;
+
+            if (Vita > 100 + (Livello - 1) * 20)
+            {
+                Vita = 100 + (Livello - 1) * 20;
+            }
+
+            Inventario.RemoveAt(0);
+
+            Console.WriteLine(
+                $"Hai recuperato {p.Cura} punti vita!"
+            );
+        }
+
+        public void ControllaLivello()
+        {
+            if (Esperienza >= Livello * 50)
+            {
+                Livello++;
+
+                Attacco += 5;
+
+                Vita += 20;
+
+                Console.WriteLine();
+                Console.WriteLine(
+                    $"Sei salito al livello {Livello}!"
+                );
+                Console.WriteLine(
+                    "Statistiche aumentate!"
+                );
+            }
+        }
+    }
+
+    class Nemico : Personaggio
+    {
+        public Nemico(
+            string nome,
+            int vita,
+            int attacco)
+            : base(nome, vita, attacco)
+        {
+        }
+    }
+
+    class Oggetto
+    {
+        public string Nome { get; set; }
+
+        public Oggetto(string nome)
+        {
+            Nome = nome;
+        }
+    }
+
+    class Pozione : Oggetto
+    {
+        public int Cura { get; set; }
+
+        public Pozione(
+            string nome,
+            int cura)
+            : base(nome)
+        {
+            Cura = cura;
+        }
+    }
+}
